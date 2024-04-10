@@ -1,0 +1,46 @@
+isMultiAz: True
+
+AZ: ${cluster}
+
+masterAddresses: "yb-master-0.yb-masters.h2.svc.cluster.cluster1:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster2:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster3:7100"
+
+# storage:
+#   master:
+#     storageClass: "standard-us-west1-b"
+#   tserver:
+#     storageClass: "standard-us-west1-b"
+
+replicas:
+  master: 1
+  tserver: 1
+  totalMasters: 3
+
+gflags:
+  master:
+    placement_cloud: "laptop"
+    placement_region: "${cluster}"
+    #placement_zone: "us-west1-b"
+    leader_failure_max_missed_heartbeat_periods: 10
+  tserver:
+    placement_cloud: "laptop"
+    placement_region: "${cluster}"
+    #placement_zone: "us-west1-b"
+    leader_failure_max_missed_heartbeat_periods: 10
+
+serviceEndpoints:
+  - name: "yb-master-ui"
+    type: ClusterIP
+    app: "yb-master"
+    ports:
+      http-ui: "7000"
+
+  - name: "yb-tserver-service"
+    type: ClusterIP
+    app: "yb-tserver"
+    ports:
+      tcp-yql-port: "9042"
+      tcp-yedis-port: "6379"
+      tcp-ysql-port: "5433" 
+
+tls:
+  enabled: true          

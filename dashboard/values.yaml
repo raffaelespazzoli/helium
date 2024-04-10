@@ -1,0 +1,24 @@
+app:
+  setting:
+    global:
+      clusterName: ${cluster}
+  ingress:
+    enabled: false
+    hosts:
+      - console.${cluster}.raffa
+    ingressClassName: contour
+    useDefaultAnnotations: true
+    annotations:
+
+    issuer:
+      name: in-cluster-issuer
+      # Scope determines what kind of issuer annotation will be used on ingress resource
+      # - default - adds 'cert-manager.io/issuer'
+      # - cluster - adds 'cert-manager.io/cluster-issuer'
+      # - disabled - disables cert-manager annotations
+      scope: cluster
+metricsScraper:
+  enabled: false
+cert-manager:
+  enabled: false
+  installCRDs: false
