@@ -5,6 +5,8 @@ etcd:
 
 
 kcp: 
+  tokenAuth:
+    enabled: true
   batteries: [-admin,-workspace-types]
   v: 8
 

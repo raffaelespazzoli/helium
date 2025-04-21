@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+spec:
+  infrastructure:
+    annotations:
+      io.cilium/lb-ipam-ips: "${ingress_ip}"
+  addresses: # This will be ignored
+  - type: IPAddress
+    value: ${ingress_ip}
+  gatewayClassName: cilium
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: All
+    name: main-http
+    port: 80
+    protocol: HTTP
+    hostname: "*.${cluster}.raffa"

@@ -1,0 +1,73 @@
+
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.innsmouth.k8s.io
+  labels:
+    api: basic-example
+    apiserver: "true"
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/root-secret  
+spec:
+  version: v1
+  group: innsmouth.k8s.io
+  groupPriorityMinimum: 2000
+  service:
+    name: basic-apiserver
+    namespace: h2
+  versionPriority: 10
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.kingsport.k8s.io
+  labels:
+    api: basic-example
+    apiserver: "true"
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+spec:
+  version: v1
+  group: kingsport.k8s.io
+  groupPriorityMinimum: 2000
+  service:
+    name: basic-apiserver
+    namespace: h2
+  versionPriority: 10
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.miskatonic.k8s.io
+  labels:
+    api: basic-example
+    apiserver: "true"
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+spec:
+  version: v1beta1
+  group: miskatonic.k8s.io
+  groupPriorityMinimum: 2000
+  service:
+    name: basic-apiserver
+    namespace: h2
+  versionPriority: 10
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.olympus.k8s.io
+  labels:
+    api: basic-example
+    apiserver: "true"
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+spec:
+  version: v1beta1
+  group: olympus.k8s.io
+  groupPriorityMinimum: 2000
+  service:
+    name: basic-apiserver
+    namespace: h2
+  versionPriority: 10
+

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kine
+  labels:
+    app: kine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kine
+  template:
+    metadata:
+      labels:
+        app: kine
+    spec:
+      containers:
+      - name: kine
+        image: rancher/kine:v0.10.3
+        ports:
+        - containerPort: 2379
+        args:
+        - '--endpoint' 
+        - 'postgres://yugabyte:yugabyte@yb-tservers-sql:5433/yugabyte?sslmode=disable'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kine"
+  labels:    
+    app: "kine"    
+  annotations:
+    service.cilium.io/global: "true"    
+spec:
+  ports:
+    - name: etcd
+      protocol: TCP
+      port: 2379
+      targetPort: 2379
+  selector:    
+    app: "kine"             

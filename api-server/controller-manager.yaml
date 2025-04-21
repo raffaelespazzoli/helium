@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basic-example-controller
+  labels:
+    api: basic-example
+    controller: "true"
+spec:
+  selector:
+    matchLabels:
+      api: basic-example
+      controller: "true"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        api: basic-example
+        controller: "true"
+    spec:
+      containers:
+      - name: controller
+        image: quay.io/raffaelespazzoli/sample-apiserver:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/bin/controller-manager"
+        args: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 100m
+            memory: 300Mi
+      volumes:
+      - name: apiserver-certs
+        secret:
+          secretName: basic-example

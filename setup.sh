@@ -16,14 +16,14 @@ wait
 # deploy cert-manager
 
 for cluster in cluster1 cluster2 cluster3; do
-  kubectl --context kind-${cluster} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+  kubectl --context kind-${cluster} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.0/cert-manager.yaml
 done
 
 # install cilium -- step 1
 
 for cluster in cluster1 cluster2 cluster3; do
   cluster=${cluster} ordinal=${cluster: -1} envsubst < ./cilium/values1.yaml > /tmp/${cluster}-values.yaml
-  helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.16.0-pre.0" --namespace kube-system -f /tmp/${cluster}-values.yaml 
+  helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.17.2" --namespace kube-system -f /tmp/${cluster}-values.yaml 
 done
 
 # wait for all the pods to be up
@@ -65,7 +65,7 @@ cluster_ips["cluster2"]="10.89.0.232"
 cluster_ips["cluster3"]="10.89.0.240"
 for cluster in cluster1 cluster2 cluster3; do
   cluster=${cluster} ordinal=${cluster: -1} apiserver_ip=${cluster_ips[${cluster}]}  envsubst < ./cilium/values2.yaml > /tmp/${cluster}-values.yaml
-  helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.16.0-pre.0" --namespace kube-system -f /tmp/${cluster}-values.yaml
+  helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.17.2" --namespace kube-system -f /tmp/${cluster}-values.yaml
 done
 
 # configure coredns for statefulsets

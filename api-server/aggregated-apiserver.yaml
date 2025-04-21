@@ -1,0 +1,82 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basic-example-apiserver
+  labels:
+    api: basic-example
+    apiserver: "true"
+spec:
+  selector:
+    matchLabels:
+      api: basic-example
+      apiserver: "true"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        api: basic-example
+        apiserver: "true"
+    spec:
+      containers:
+      - name: apiserver
+        image: quay.io/raffaelespazzoli/sample-apiserver:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: apiserver-certs
+          mountPath: /apiserver.local.config/certificates
+          readOnly: true
+        command:
+        - "/bin/apiserver"
+        args:
+        - "--etcd-servers=http://kine:2379"
+        - "--tls-cert-file=/apiserver.local.config/certificates/tls.crt"
+        - "--tls-private-key-file=/apiserver.local.config/certificates/tls.key"
+        - "--feature-gates=APIPriorityAndFairness=false"
+        - "--audit-log-path=-"
+        - "--audit-log-maxage=0"
+        - "--audit-log-maxbackup=0"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 200Mi
+          limits:
+            cpu: 200m
+            memory: 300Mi
+      volumes:
+      - name: apiserver-certs
+        secret:
+          secretName: basic-example
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: basic-apiserver
+  labels:
+    api: basic-example
+    apiserver: "true"
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 443
+  selector:
+    api: basic-example
+    apiserver: "true"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: basic-example
+spec:
+  commonName: basic-apiserver
+  issuerRef:
+    kind: ClusterIssuer
+    name: in-cluster-issuer
+  dnsNames:
+    - basic-apiserver.h2.svc
+    - basic-apiserver.h2.svc.cluster.local
+    - basic-apiserver
+  secretName: basic-example
+  usages:
+  - server auth    

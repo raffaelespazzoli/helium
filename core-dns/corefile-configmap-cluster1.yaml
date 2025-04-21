@@ -11,6 +11,7 @@ data:
            lameduck 5s
         }
         ready
+        multicluster clusterset.local
         rewrite name suffix .cluster.cluster1 .cluster.local answer auto
         kubernetes cluster.local in-addr.arpa ip6.arpa {
            pods insecure
@@ -54,5 +55,5 @@ data:
           cluster.cluster3. c3-
       }
       forward . 127.0.0.1:53
-    }            
+    }           
 

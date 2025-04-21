@@ -1,0 +1,144 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+    api-approved.kubernetes.io: "https://github.com/kubernetes/kubernetes/pull/78458"
+  name: deepones.innsmouth.k8s.io
+spec:
+  group: innsmouth.k8s.io
+  names:
+    kind: DeepOne
+    listKind: DeepOneList
+    plural: deepones
+    singular: deepone
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: DeepOne defines a resident of innsmouth
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DeepOnesSpec defines the desired state of DeepOne
+            properties:
+              const:
+                description: Example of using a constant
+                type: string
+              constMap:
+                additionalProperties:
+                  description: |-
+                    Constants aren't automatically generated for unversioned packages.
+                    Instead share the same constant for both packages
+                  type: string
+                type: object
+              constPtr:
+                description: |-
+                  Constants aren't automatically generated for unversioned packages.
+                  Instead share the same constant for both packages
+                type: string
+              constSlice:
+                items:
+                  description: |-
+                    Constants aren't automatically generated for unversioned packages.
+                    Instead share the same constant for both packages
+                  type: string
+                type: array
+              fish_required:
+                description: fish_required defines the number of fish required by
+                  the DeepOne.
+                type: integer
+              sample:
+                properties:
+                  sub:
+                    properties:
+                      foo:
+                        type: string
+                    type: object
+                type: object
+              sample_list:
+                items:
+                  properties:
+                    sub:
+                      items:
+                        properties:
+                          foo:
+                            type: string
+                        type: object
+                      type: array
+                  type: object
+                type: array
+              sample_map:
+                additionalProperties:
+                  properties:
+                    sub:
+                      additionalProperties:
+                        properties:
+                          foo:
+                            type: string
+                        type: object
+                      type: object
+                  type: object
+                type: object
+              sample_pointer:
+                properties:
+                  sub:
+                    properties:
+                      foo:
+                        type: string
+                    type: object
+                type: object
+              sample_pointer_list:
+                items:
+                  properties:
+                    sub:
+                      items:
+                        properties:
+                          foo:
+                            type: string
+                        type: object
+                      type: array
+                  type: object
+                type: array
+              sample_pointer_map:
+                additionalProperties:
+                  properties:
+                    sub:
+                      additionalProperties:
+                        properties:
+                          foo:
+                            type: string
+                        type: object
+                      type: object
+                  type: object
+                type: object
+            type: object
+          status:
+            description: DeepOneStatus defines the observed state of DeepOne
+            properties:
+              actual_fish:
+                description: actual_fish defines the number of fish caught by the
+                  DeepOne.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true

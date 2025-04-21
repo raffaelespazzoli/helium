@@ -1,0 +1,59 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+    api-approved.kubernetes.io: "https://github.com/kubernetes/kubernetes/pull/78458"    
+  name: festivals.kingsport.k8s.io
+spec:
+  group: kingsport.k8s.io
+  names:
+    kind: Festival
+    listKind: FestivalList
+    plural: festivals
+    singular: festival
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: Festival
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FestivalSpec defines the desired state of Festival
+            properties:
+              invited:
+                description: Invited holds the number of invited attendees
+                type: integer
+              year:
+                description: Year when the festival was held, may be negative (BC)
+                type: integer
+            type: object
+          status:
+            description: FestivalStatus defines the observed state of Festival
+            properties:
+              attended:
+                description: Attended holds the actual number of attendees
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true

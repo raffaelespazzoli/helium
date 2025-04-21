@@ -1,107 +1,146 @@
 ---
 # Source: yugabyte/templates/service.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: yb-master-pdb
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:      
-      app: "yb-master"
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: yugabyte-tls-client-cert
+#   namespace: "h2"
+#   labels:    
+#     heritage: "Helm"
+#     release: "yugabytedb"
+#     chart: "yugabyte"
+#     component: "yugabytedb"
+# type: Opaque
+# data:
+#   root.crt: xxx
+#   yugabytedb.crt: yyy
+#   yugabytedb.key: zzz
 ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: yugabyte-tls-client-cert
+spec:
+  # Secret names are always required.
+  secretName: yugabyte-tls-client-cert
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  isCA: false
+  usages:
+    - client auth
+  # At least one of a DNS Name, URI, IP address or otherName is required.
+  dnsNames:
+    - yugabyte
+  # Issuer references are always required.
+  issuerRef:
+    name: in-cluster-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---    
 # Source: yugabyte/templates/service.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: yb-master-yugabyte-tls-cert
+#   namespace: "h2"
+#   labels:    
+#     app: "yb-master"    
+#     heritage: "Helm"
+#     release: "yugabytedb"
+#     chart: "yugabyte"
+#     component: "yugabytedb"
+# type: Opaque
+# data:
+#   node.yb-master-0.yb-masters.h2.svc.cluster.${cluster}.crt: xxx
+#   node.yb-master-0.yb-masters.h2.svc.cluster.${cluster}.key: yyy
+#   ca.crt: zzz
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: yb-tserver-pdb
+  name: yb-master-yugabyte-tls-cert
 spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:      
-      app: "yb-tserver"
+  # Secret names are always required.
+  secretName: yb-master-yugabyte-tls-cert
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  isCA: false
+  usages:
+    - client auth
+    - server auth
+  # At least one of a DNS Name, URI, IP address or otherName is required.
+  dnsNames:
+    - yb-master-0.yb-masters.h2.svc.cluster.local
+    - yb-master-0.yb-masters.h2
+    - yb-master-0.yb-masters.h2.svc.cluster.${cluster}    
+  # Issuer references are always required.
+  issuerRef:
+    name: in-cluster-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---    
+# Source: yugabyte/templates/service.yaml
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: yb-tserver-yugabyte-tls-cert
+#   namespace: "h2"
+#   labels:    
+#     app: "yb-tserver"    
+#     heritage: "Helm"
+#     release: "yugabytedb"
+#     chart: "yugabyte"
+#     component: "yugabytedb"
+# type: Opaque
+# data:
+#   node.yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}.crt: yyy
+#   node.yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}.key: xxx
+#   ca.crt: zzz
 ---
-# Source: yugabyte/templates/master-gflags-secret.yaml
-apiVersion: v1
-kind: Secret
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: yb-demo-yugabyte-master-gflags
-type: Opaque
-stringData:
-  server.conf.template: |
-    --fs_data_dirs=/mnt/disk0,/mnt/disk1
-    --master_addresses=yb-master-0.yb-masters.h2.svc.cluster.cluster1:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster2:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster3:7100
-    --replication_factor=3
-    --enable_ysql=true
-    --master_enable_metrics_snapshotter=true
-    --metrics_snapshotter_tserver_metrics_whitelist=handler_latency_yb_tserver_TabletServerService_Read_count,handler_latency_yb_tserver_TabletServerService_Write_count,handler_latency_yb_tserver_TabletServerService_Read_sum,handler_latency_yb_tserver_TabletServerService_Write_sum,disk_usage,cpu_usage,node_up
-    --metric_node_name=yb-master-0
-    --memory_limit_hard_bytes=1824522240
-    --stderrthreshold=0
-    --num_cpus=1
-    --max_log_size=256
-    --undefok=num_cpus,enable_ysql
-    --rpc_bind_addresses=yb-master-0.yb-masters.h2.svc.cluster.${cluster}
-    --server_broadcast_addresses=yb-master-0.yb-masters.h2.svc.cluster.${cluster}:7100
-    --webserver_interface=0.0.0.0
-    --default_memory_limit_to_ram_ratio=0.85
-    --placement_cloud="laptop"
-    --placement_region="${cluster}"   
----
-# Source: yugabyte/templates/tserver-gflags-secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: yb-demo-yugabyte-tserver-gflags
-type: Opaque
-stringData:
-  server.conf.template: |
-    --fs_data_dirs=/mnt/disk0,/mnt/disk1
-    --tserver_master_addrs=yb-master-0.yb-masters.h2.svc.cluster.cluster1:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster2:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster3:7100
-    --enable_ysql=true
-    --pgsql_proxy_bind_address=0.0.0.0:5433
-    --tserver_enable_metrics_snapshotter=true
-    --metrics_snapshotter_interval_ms=11000
-    --metrics_snapshotter_tserver_metrics_whitelist=handler_latency_yb_tserver_TabletServerService_Read_count,handler_latency_yb_tserver_TabletServerService_Write_count,handler_latency_yb_tserver_TabletServerService_Read_sum,handler_latency_yb_tserver_TabletServerService_Write_sum,disk_usage,cpu_usage,node_up
-    --metric_node_name=yb-tserver-0
-    --memory_limit_hard_bytes=3649044480
-    --stderrthreshold=0
-    --max_log_size=256
-    --num_cpus=1
-    --undefok=num_cpus,enable_ysql
-    --use_node_hostname_for_local_tserver=true
-    --cql_proxy_bind_address=yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}
-    --rpc_bind_addresses=yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}
-    --server_broadcast_addresses=yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}:9100
-    --webserver_interface=0.0.0.0
-    --placement_cloud="laptop"
-    --placement_region="${cluster}"
+  name: yb-tserver-yugabyte-tls-cert
+spec:
+  # Secret names are always required.
+  secretName: yb-tserver-yugabyte-tls-cert
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  isCA: false
+  usages:
+    - client auth
+    - server auth
+  # At least one of a DNS Name, URI, IP address or otherName is required.
+  dnsNames:
+    - yb-tserver-0.yb-tservers.h2.svc.cluster.local
+    - yb-tserver-0.yb-tservers.h2
+    - yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}    
+  # Issuer references are always required.
+  issuerRef:
+    name: in-cluster-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
 ---
 # Source: yugabyte/templates/debug_config_map.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: yb-demo-yugabyte-master-hooks
+  name: yugabytedb-master-hooks
+  namespace: "h2"
 data:
   yb-master-0-pre_debug_hook.sh: "echo 'hello-from-pre' " 
   yb-master-0-post_debug_hook.sh: "echo 'hello-from-post' "
-  yb-master-1-pre_debug_hook.sh: "echo 'hello-from-pre' " 
-  yb-master-1-post_debug_hook.sh: "echo 'hello-from-post' "
-  yb-master-2-pre_debug_hook.sh: "echo 'hello-from-pre' " 
-  yb-master-2-post_debug_hook.sh: "echo 'hello-from-post' "
 ---
 # Source: yugabyte/templates/debug_config_map.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: yb-demo-yugabyte-tserver-hooks
+  name: yugabytedb-tserver-hooks
+  namespace: "h2"
 data:
   yb-tserver-0-pre_debug_hook.sh: "echo 'hello-from-pre' " 
   yb-tserver-0-post_debug_hook.sh: "echo 'hello-from-post' "
-  yb-tserver-1-pre_debug_hook.sh: "echo 'hello-from-pre' " 
-  yb-tserver-1-post_debug_hook.sh: "echo 'hello-from-post' "
-  yb-tserver-2-pre_debug_hook.sh: "echo 'hello-from-pre' " 
-  yb-tserver-2-post_debug_hook.sh: "echo 'hello-from-post' "
 ---
 # Source: yugabyte/templates/service.yaml
 apiVersion: v1
@@ -111,7 +150,7 @@ metadata:
   labels:    
     app: "yb-master"    
     heritage: "Helm"
-    release: "yb-demo"
+    release: "yugabytedb"
     chart: "yugabyte"
     component: "yugabytedb"
     service-type: "headless"
@@ -131,11 +170,31 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: "yb-master-ui"
+  labels:    
+    app: "yb-master"    
+    heritage: "Helm"
+    release: "yugabytedb"
+    chart: "yugabyte"
+    component: "yugabytedb"
+    service-type: "endpoint"
+spec:
+  ports:
+    - name: "http-ui"
+      port: 7000
+  selector:    
+    app: "yb-master"
+  type: ClusterIP
+---
+# Source: yugabyte/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
   name: "yb-tservers"
   labels:    
     app: "yb-tserver"    
     heritage: "Helm"
-    release: "yb-demo"
+    release: "yugabytedb"
     chart: "yugabyte"
     component: "yugabytedb"
     service-type: "headless"
@@ -164,14 +223,39 @@ spec:
     app: "yb-tserver"
 ---
 # Source: yugabyte/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "yb-tserver-service"
+  labels:    
+    app: "yb-tserver"    
+    heritage: "Helm"
+    release: "yugabytedb"
+    chart: "yugabyte"
+    component: "yugabytedb"
+    service-type: "endpoint"
+spec:
+  ports:
+    - name: "tcp-yedis-port"
+      port: 6379
+    - name: "tcp-yql-port"
+      port: 9042
+    - name: "tcp-ysql-port"
+      port: 5433
+  selector:    
+    app: "yb-tserver"
+  type: ClusterIP
+---
+# Source: yugabyte/templates/service.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: "yb-master"
+  namespace: "h2"
   labels:    
     app: "yb-master"    
     heritage: "Helm"
-    release: "yb-demo"
+    release: "yugabytedb"
     chart: "yugabyte"
     component: "yugabytedb"
 spec:
@@ -185,7 +269,7 @@ spec:
         name: datadir0
         labels:          
           heritage: "Helm"
-          release: "yb-demo"
+          release: "yugabytedb"
           chart: "yugabyte"
           component: "yugabytedb"
       spec:
@@ -198,7 +282,7 @@ spec:
         name: datadir1
         labels:          
           heritage: "Helm"
-          release: "yb-demo"
+          release: "yugabytedb"
           chart: "yugabyte"
           component: "yugabytedb"
       spec:
@@ -217,22 +301,19 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/gflags: 60799fe114389e3201f91c4584a66f6fbe146a9d00306a27b5ad5d521fe58506
+        checksum/rootCA: 90ace38c3efb4bf1768630295603f06eb0c140b0384c0860e28e0ad1d4dd6a44
       labels:        
         app: "yb-master"        
         heritage: "Helm"
-        release: "yb-demo"
+        release: "yugabytedb"
         chart: "yugabyte"
         component: "yugabytedb"
         yugabytedUi: "true"
     spec: # yb-masters
       terminationGracePeriodSeconds: 300
-      affinity:
-        # Set the anti-affinity selector scope to YB masters and tservers.
-        podAntiAffinity: {}
       containers:
       - name: "yb-master"
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: IfNotPresent
         lifecycle:
           postStart:
@@ -286,8 +367,8 @@ spec:
             cpu: "2"
             memory: 2Gi
           requests:
-            cpu: "0.5"
-            memory: 0.5Gi
+            cpu: "2"
+            memory: 2Gi
         
         # core dumps are collected to workingDir if
         # kernel.core_pattern is set to a relative path like
@@ -301,6 +382,9 @@ spec:
           - "/bin/bash"
           - "-c"
           - |
+            echo starting
+            sleep 30 || true             
+            echo after sleep
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               /home/yugabyte/tools/k8s_preflight.py all
             fi && \
@@ -310,14 +394,14 @@ spec:
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               PYTHONUNBUFFERED="true" /home/yugabyte/tools/k8s_preflight.py \
                 dnscheck \
-                --addr="$(HOSTNAME).yb-masters.h2.svc.cluster.${cluster}" \
+                --addr="$(HOSTNAME).yb-masters.$(NAMESPACE).svc.cluster.${cluster}" \
                 --port="7100"
             fi && \
             
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               PYTHONUNBUFFERED="true" /home/yugabyte/tools/k8s_preflight.py \
                 dnscheck \
-                --addr="$(HOSTNAME).yb-masters.h2.svc.cluster.${cluster}:7100" \
+                --addr="$(HOSTNAME).yb-masters.$(NAMESPACE).svc.cluster.${cluster}:7100" \
                 --port="7100"
             fi && \
             
@@ -333,10 +417,29 @@ spec:
             else
               k8s_parent=""
             fi && \
-            mkdir -p /tmp/yugabyte/master/conf && \
-            envsubst < /opt/master/conf/server.conf.template > /tmp/yugabyte/master/conf/server.conf && \
+            echo after checks
             exec ${k8s_parent} /home/yugabyte/bin/yb-master \
-              --flagfile /tmp/yugabyte/master/conf/server.conf
+              --fs_data_dirs=/mnt/disk0,/mnt/disk1 \
+              --master_addresses=yb-master-0.yb-masters.h2.svc.cluster.cluster1:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster2:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster3:7100 \
+              --replication_factor=3 \
+              --enable_ysql=true \
+              --metric_node_name=$(HOSTNAME) \
+              --memory_limit_hard_bytes=1824522240 \
+              --stderrthreshold=0 \
+              --num_cpus=2 \
+              --undefok=num_cpus,enable_ysql \
+              --default_memory_limit_to_ram_ratio="0.85" \
+              --leader_failure_max_missed_heartbeat_periods="10" \
+              --placement_cloud="laptop" \
+              --placement_region="${cluster}" \
+              --certs_dir=/opt/certs/yugabyte \
+              --use_node_to_node_encryption=true \
+              --allow_insecure_connections=false \
+              --rpc_bind_addresses=$(HOSTNAME).yb-masters.$(NAMESPACE).svc.cluster.${cluster} \
+              --server_broadcast_addresses=$(HOSTNAME).yb-masters.$(NAMESPACE).svc.cluster.${cluster}:7100 \
+              --webserver_interface=0.0.0.0 \
+              --master_enable_metrics_snapshotter=true \
+              --metrics_snapshotter_tserver_metrics_whitelist=handler_latency_yb_tserver_TabletServerService_Read_count,handler_latency_yb_tserver_TabletServerService_Write_count,handler_latency_yb_tserver_TabletServerService_Read_sum,handler_latency_yb_tserver_TabletServerService_Write_sum,disk_usage,cpu_usage,node_up
         ports:
           - containerPort: 7000
             name: "http-ui"
@@ -345,17 +448,20 @@ spec:
           - containerPort: 15433
             name: "yugabyted-ui"
         volumeMounts:
-          - name: master-gflags
-            mountPath: /opt/master/conf
           - name: debug-hooks-volume
             mountPath: /opt/debug_hooks_config
-          
           - name: datadir0
             mountPath: /mnt/disk0
           - name: datadir1
             mountPath: /mnt/disk1
+          - name: yb-master-yugabyte-tls-cert
+            mountPath: /opt/certs/yugabyte
+            readOnly: true
+          - name: yugabyte-tls-client-cert
+            mountPath: /root/.yugabytedb/
+            readOnly: true
       - name: yb-cleanup
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: IfNotPresent
         env:
         - name: USER
@@ -379,7 +485,7 @@ spec:
             mountPath: /var/yugabyte/cores
             subPath: cores
       - name: yugabyted-ui
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: "IfNotPresent"
         env:
         - name: HOSTNAME
@@ -399,12 +505,13 @@ spec:
           - |
             while true; do
             /home/yugabyte/bin/yugabyted-ui \
-              -database_host=$(HOSTNAME).yb-masters.h2.svc.cluster.${cluster} \
+              -database_host=$(HOSTNAME).yb-masters.$(NAMESPACE).svc.cluster.${cluster} \
               -bind_address=0.0.0.0 \
               -ysql_port=5433 \
               -ycql_port=9042 \
               -master_ui_port=7000 \
               -tserver_ui_port=9000 \
+              -secure=true \
             || echo "ERROR: yugabyted-ui failed. This might be because your yugabyte \
             version is older than 2.21.0. If this is the case, set yugabytedUi.enabled to false \
             in helm to disable yugabyted-ui, or upgrade to a version 2.21.0 or newer."; \
@@ -413,26 +520,49 @@ spec:
             sleep 30s & wait; \
             trap - TERM INT;
             done \
-
+      initContainers:
+      - name: "certs-config"
+        image: ubuntu:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: certs
+          mountPath: /certs-0
+        - name: yb-master-yugabyte-tls-cert
+          mountPath: /certs                      
+        command:
+        - bash
+        - -c
+        - |
+          cp /certs-0/tls.key /certs/node.yb-master-0.yb-masters.h2.svc.cluster.${cluster}.key
+          chmod 0600 /certs/node.yb-master-0.yb-masters.h2.svc.cluster.${cluster}.key
+          cp /certs-0/tls.crt /certs/node.yb-master-0.yb-masters.h2.svc.cluster.${cluster}.crt
+          cp /certs-0/ca.crt /certs/ca.crt       
       volumes:
         - name: debug-hooks-volume
           configMap:
-            name: yb-demo-yugabyte-master-hooks
+            name: yugabytedb-master-hooks
             defaultMode: 0755
-        - name: master-gflags
+        - name: certs
           secret:
-            secretName: yb-demo-yugabyte-master-gflags
-            defaultMode: 0755
+            secretName: yb-master-yugabyte-tls-cert
+            defaultMode: 256        
+        - name: yb-master-yugabyte-tls-cert
+          emptyDir: {}
+        - name: yugabyte-tls-client-cert
+          secret:
+            secretName: yugabyte-tls-client-cert
+            defaultMode: 256
 ---
 # Source: yugabyte/templates/service.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: "yb-tserver"
+  namespace: "h2"
   labels:    
     app: "yb-tserver"    
     heritage: "Helm"
-    release: "yb-demo"
+    release: "yugabytedb"
     chart: "yugabyte"
     component: "yugabytedb"
 spec:
@@ -446,7 +576,7 @@ spec:
         name: datadir0
         labels:          
           heritage: "Helm"
-          release: "yb-demo"
+          release: "yugabytedb"
           chart: "yugabyte"
           component: "yugabytedb"
       spec:
@@ -459,7 +589,7 @@ spec:
         name: datadir1
         labels:          
           heritage: "Helm"
-          release: "yb-demo"
+          release: "yugabytedb"
           chart: "yugabyte"
           component: "yugabytedb"
       spec:
@@ -478,23 +608,19 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/gflags: 538aa7e8ecdf60dc1964052e073461311a5150984591d49e43d95e796126e729
+        checksum/rootCA: 90ace38c3efb4bf1768630295603f06eb0c140b0384c0860e28e0ad1d4dd6a44
       labels:        
         app: "yb-tserver"        
         heritage: "Helm"
-        release: "yb-demo"
+        release: "yugabytedb"
         chart: "yugabyte"
         component: "yugabytedb"
         yugabytedUi: "true"
     spec: # yb-tservers
       terminationGracePeriodSeconds: 300
-      affinity:
-        # Set the anti-affinity selector scope to YB masters and tservers.
-        podAntiAffinity: {}
-        
       containers:
       - name: "yb-tserver"
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: IfNotPresent
         lifecycle:
           postStart:
@@ -503,6 +629,9 @@ spec:
                 - "bash"
                 - "-c"
                 - >
+                  echo starting
+                  sleep 30 || true             
+                  echo after sleep                
                   mkdir -p /mnt/disk0/cores;
                   mkdir -p /mnt/disk0/yb-data/scripts;
                   if [ ! -f /mnt/disk0/yb-data/scripts/log_cleanup.sh ]; then
@@ -543,13 +672,15 @@ spec:
         - name: YBDEVOPS_CORECOPY_DIR
           value: "/mnt/disk0/cores"
         
+        - name: SSL_CERTFILE
+          value: /root/.yugabytedb/root.crt
         resources:
           limits:
             cpu: "2"
             memory: 4Gi
           requests:
-            cpu: "0.5"
-            memory: 0.5Gi
+            cpu: "2"
+            memory: 4Gi
         
         # core dumps are collected to workingDir if
         # kernel.core_pattern is set to a relative path like
@@ -572,14 +703,14 @@ spec:
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               PYTHONUNBUFFERED="true" /home/yugabyte/tools/k8s_preflight.py \
                 dnscheck \
-                --addr="$(HOSTNAME).yb-tservers.h2.svc.cluster.${cluster}" \
+                --addr="$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster}" \
                 --port="9100"
             fi && \
             
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               PYTHONUNBUFFERED="true" /home/yugabyte/tools/k8s_preflight.py \
                 dnscheck \
-                --addr="$(HOSTNAME).yb-tservers.h2.svc.cluster.${cluster}:9100" \
+                --addr="$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster}:9100" \
                 --port="9100"
             fi && \
             
@@ -598,7 +729,7 @@ spec:
             if [ -f /home/yugabyte/tools/k8s_preflight.py ]; then
               PYTHONUNBUFFERED="true" /home/yugabyte/tools/k8s_preflight.py \
                 dnscheck \
-                --addr="$(HOSTNAME).yb-tservers.h2.svc.cluster.${cluster}" \
+                --addr="$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster}" \
                 --port="9042"
             fi && \
             
@@ -609,10 +740,32 @@ spec:
                 --port="5433"
             fi && \
             
-              mkdir -p /tmp/yugabyte/tserver/conf && \
-              envsubst < /opt/tserver/conf/server.conf.template > /tmp/yugabyte/tserver/conf/server.conf && \
-              exec ${k8s_parent} /home/yugabyte/bin/yb-tserver \
-                --flagfile /tmp/yugabyte/tserver/conf/server.conf
+            exec ${k8s_parent} /home/yugabyte/bin/yb-tserver \
+              --fs_data_dirs=/mnt/disk0,/mnt/disk1 \
+              --tserver_master_addrs=yb-master-0.yb-masters.h2.svc.cluster.cluster1:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster2:7100,yb-master-0.yb-masters.h2.svc.cluster.cluster3:7100 \
+              --metric_node_name=$(HOSTNAME) \
+              --memory_limit_hard_bytes=3649044480 \
+              --stderrthreshold=0 \
+              --num_cpus=2 \
+              --undefok=num_cpus,enable_ysql \
+              --use_node_hostname_for_local_tserver=true \
+              --leader_failure_max_missed_heartbeat_periods="10" \
+              --placement_cloud="laptop" \
+              --placement_region="${cluster}" \
+              --certs_dir=/opt/certs/yugabyte \
+              --use_node_to_node_encryption=true \
+              --allow_insecure_connections=false \
+              --use_client_to_server_encryption=true \
+              --certs_for_client_dir=/opt/certs/yugabyte \
+              --rpc_bind_addresses=$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster} \
+              --server_broadcast_addresses=$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster}:9100 \
+              --webserver_interface=0.0.0.0 \
+              --enable_ysql=true \
+              --pgsql_proxy_bind_address=0.0.0.0:5433 \
+              --cql_proxy_bind_address=$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster} \
+              --tserver_enable_metrics_snapshotter=true \
+              --metrics_snapshotter_interval_ms=11000 \
+              --metrics_snapshotter_tserver_metrics_whitelist=handler_latency_yb_tserver_TabletServerService_Read_count,handler_latency_yb_tserver_TabletServerService_Write_count,handler_latency_yb_tserver_TabletServerService_Read_sum,handler_latency_yb_tserver_TabletServerService_Write_sum,disk_usage,cpu_usage,node_up
         ports:
           - containerPort: 9000
             name: "http-ui"
@@ -635,8 +788,6 @@ spec:
         volumeMounts:
           - name: tserver-tmp
             mountPath: /tmp
-          - name: tserver-gflags
-            mountPath: /opt/tserver/conf
           - name: debug-hooks-volume
             mountPath: /opt/debug_hooks_config
           
@@ -644,8 +795,14 @@ spec:
             mountPath: /mnt/disk0
           - name: datadir1
             mountPath: /mnt/disk1
+          - name: yb-tserver-yugabyte-tls-cert
+            mountPath: /opt/certs/yugabyte
+            readOnly: true
+          - name: yugabyte-tls-client-cert
+            mountPath: /root/.yugabytedb/
+            readOnly: true
       - name: yb-cleanup
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: IfNotPresent
         env:
         - name: USER
@@ -669,7 +826,7 @@ spec:
             mountPath: /var/yugabyte/cores
             subPath: cores
       - name: yugabyted-ui
-        image: "yugabytedb/yugabyte:2.25.1.0-b381"
+        image: "yugabytedb/yugabyte:2.21.0.0-b545"
         imagePullPolicy: "IfNotPresent"
         env:
         - name: HOSTNAME
@@ -689,12 +846,13 @@ spec:
           - |
             while true; do
             /home/yugabyte/bin/yugabyted-ui \
-              -database_host=$(HOSTNAME).yb-tservers.h2.svc.cluster.${cluster} \
+              -database_host=$(HOSTNAME).yb-tservers.$(NAMESPACE).svc.cluster.${cluster} \
               -bind_address=0.0.0.0 \
               -ysql_port=5433 \
               -ycql_port=9042 \
               -master_ui_port=7000 \
               -tserver_ui_port=9000 \
+              -secure=true \
             || echo "ERROR: yugabyted-ui failed. This might be because your yugabyte \
             version is older than 2.21.0. If this is the case, set yugabytedUi.enabled to false \
             in helm to disable yugabyted-ui, or upgrade to a version 2.21.0 or newer."; \
@@ -703,17 +861,49 @@ spec:
             sleep 30s & wait; \
             trap - TERM INT;
             done \
-
+      initContainers:
+      - name: "certs-config"
+        image: ubuntu:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: certs
+          mountPath: /certs-0
+        - name: client-certs
+          mountPath: /client-certs-0
+        - name: yugabyte-tls-client-cert
+          mountPath: /client-certs                    
+        - name: yb-tserver-yugabyte-tls-cert
+          mountPath: /certs                      
+        command:
+        - bash
+        - -c
+        - |
+          cp /certs-0/tls.key /certs/node.yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}.key
+          chmod 0600 /certs/node.yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}.key
+          cp /certs-0/tls.crt /certs/node.yb-tserver-0.yb-tservers.h2.svc.cluster.${cluster}.crt
+          cp /certs-0/ca.crt /certs/ca.crt
+          cp /client-certs-0/tls.key /client-certs/yugabyte.key
+          chmod 0600 /client-certs/yugabyte.key
+          cp /client-certs-0/tls.crt /client-certs/yugabyte.crt
+          cp /client-certs-0/ca.crt /client-certs/root.crt          
       volumes:
         - name: debug-hooks-volume
           configMap:
-            name: yb-demo-yugabyte-tserver-hooks
-            defaultMode: 0755
-        - name: tserver-gflags
-          secret:
-            secretName: yb-demo-yugabyte-tserver-gflags
+            name: yugabytedb-tserver-hooks
             defaultMode: 0755
         - name: tserver-tmp
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: yb-tserver-yugabyte-tls-cert
+            defaultMode: 256
+        - name: client-certs
+          secret:
+            secretName: yugabyte-tls-client-cert
+            defaultMode: 256                    
+        - name: yb-tserver-yugabyte-tls-cert
+          emptyDir: {}
+        - name: yugabyte-tls-client-cert
           emptyDir: {}
 ---
 # Source: yugabyte/templates/secrets.yaml
@@ -722,68 +912,5 @@ spec:
 # Source: yugabyte/templates/secrets.yaml
 # Create secrets from other namespaces for tservers.
 ---
-# Source: yugabyte/templates/service-endpoints.yaml
-# Services endpoints
----
 # Source: yugabyte/templates/service.yaml
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: "yb-masters-ui"
-  labels:    
-    app: "yb-master"    
-    heritage: "Helm"
-    release: "yb-demo"
-    chart: "yugabyte"
-    component: "yugabytedb"
-    service-type: "headless"
-spec:
-  ports:
-    - name: "http-ui"
-      port: 7000
-  selector:    
-    app: "yb-master"
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: yugabyte-ui
-spec:
-  parentRefs:
-  - name: main-gateway
-    namespace: kube-system
-  hostnames:
-  - yugabyte.${cluster}.raffa
-  rules:
-  - matches:
-    - path:
-        value: "/"
-    backendRefs:
-    - name: yb-masters-ui
-      port: 7000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: "yb-tservers-sql"
-  labels:    
-    app: "yb-tserver"    
-    heritage: "Helm"
-    release: "yb-demo"
-    chart: "yugabyte"
-    component: "yugabytedb"
-  annotations:
-    service.cilium.io/global: "true"    
-spec:
-  ports:
-    - name: tcp-yql-port
-      protocol: TCP
-      port: 9042
-      targetPort: 9042
-    - name: tcp-ysql-port
-      protocol: TCP
-      port: 5433
-      targetPort: 5433
-  selector:    
-    app: "yb-tserver"      
