@@ -57,7 +57,7 @@ done
 
 
 
-## atch core-dns
+## patch core-dns
 
 inspect kind network
 ```sh
@@ -220,6 +220,8 @@ make sure you have this in your host file
 10.89.0.234 yugabyte.cluster2.raffa
 10.89.0.242 yugabyte.cluster3.raffa
 ```
+
+run this to troubleshoot / restart everything
 
 ```sh
 for cluster in cluster1 cluster2 cluster3; do
