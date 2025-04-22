@@ -166,6 +166,12 @@ cilium clustermesh status --context kind-cluster2
 cilium clustermesh status --context kind-cluster3
 ```
 
+access hubble ui
+
+```sh
+cilium --context kind-${cluster} hubble ui
+```
+
 ## deploy dashboard (optional)
 
 ```sh
@@ -346,11 +352,7 @@ access grafana
 kubectl --context kind-${cluster} -n cilium-monitoring port-forward service/grafana --address 0.0.0.0 --address :: 3000:3000
 ``` -->
 
-access hubble ui
 
-```sh
-cilium --context kind-${cluster} hubble ui
-```
 
 
 then you should be able to connect to the consoles  with these urls: console.<cluster>.raffa
