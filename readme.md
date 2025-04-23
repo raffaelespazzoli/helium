@@ -55,8 +55,6 @@ kubectl --context kind-${cluster} apply -f https://raw.githubusercontent.com/kub
 done
 ```
 
-
-
 ## patch core-dns
 
 inspect kind network
@@ -98,11 +96,13 @@ cluster_ips["cluster3"]="10.89.0.240"
 export cidr_cluster1="10.89.0.224/29"
 export cidr_cluster2="10.89.0.232/29"
 export cidr_cluster3="10.89.0.240/29"
+declare -A ingress_ips
+ingress_ips["cluster1"]="10.89.0.226"
+ingress_ips["cluster2"]="10.89.0.234"
+ingress_ips["cluster3"]="10.89.0.242"
 for cluster in cluster1 cluster2 cluster3; do
   cluster=${cluster} ordinal=${cluster: -1} apiserver_ip=${cluster_ips[${cluster}]}  envsubst < ./cilium/values.yaml > /tmp/${cluster}-values.yaml
   helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.17.2" --namespace kube-system -f /tmp/${cluster}-values.yaml
-  vcidr=cidr_${cluster}
-  cidr=${!vcidr} envsubst < ./cilium/ippool.yaml | kubectl --context kind-${cluster} apply -f -
   ingress_ip=${ingress_ips[${cluster}]}  cluster=${cluster} envsubst < ./cilium/gateway.yaml | kubectl --context kind-${cluster} apply -f - -n kube-system
   cluster=${cluster} envsubst < ./cilium/httproute.yaml | kubectl --context kind-${cluster} apply -f - -n kube-system
 done
@@ -120,12 +120,12 @@ wait
 complete cilium configuration
 
 ```sh
-declare -A ingress_ips
-ingress_ips["cluster1"]="10.89.0.226"
-ingress_ips["cluster2"]="10.89.0.234"
-ingress_ips["cluster3"]="10.89.0.242"
+export cidr_cluster1="10.89.0.224/29"
+export cidr_cluster2="10.89.0.232/29"
+export cidr_cluster3="10.89.0.240/29"
 for cluster in cluster1 cluster2 cluster3; do
-  ingress_ip=${ingress_ips[${cluster}]}  cluster=${cluster} envsubst < ./cilium/gateway.yaml | kubectl --context kind-${cluster} apply -f - -n kube-system
+  vcidr=cidr_${cluster}
+  cidr=${!vcidr} envsubst < ./cilium/ippool.yaml | kubectl --context kind-${cluster} apply -f -
 done
 ```
 
@@ -137,14 +137,6 @@ for cluster in cluster1 cluster2 cluster3; do
 done
 ```
 
-this sort of hack is to share the CA across clusters
-
-```sh
-kubectl --context kind-cluster1 apply -f ./cert-manager/self-signed-issuer.yaml -n cert-manager
-sleep 1
-kubectl --context kind-cluster1 get secret root-secret -n cert-manager -o yaml > /tmp/root-secret.yaml
-```
-
 wait for cert-manager pods to be up
 
 ```sh
@@ -152,6 +144,14 @@ kubectl --context kind-cluster1 wait pod --all -n cert-manager --for=condition=R
 kubectl --context kind-cluster2 wait pod --all -n cert-manager --for=condition=Ready --timeout=600s & 
 kubectl --context kind-cluster3 wait pod --all -n cert-manager --for=condition=Ready --timeout=600s &
 wait
+```
+
+this sort of hack is to share the CA across clusters
+
+```sh
+kubectl --context kind-cluster1 apply -f ./cert-manager/self-signed-issuer.yaml -n cert-manager
+sleep 1
+kubectl --context kind-cluster1 get secret root-secret -n cert-manager -o yaml > /tmp/root-secret.yaml
 ```
 
 ```sh
@@ -187,6 +187,16 @@ access hubble ui
 cilium --context kind-${cluster} hubble ui
 ```
 
+you can also access hubble via this address: `http://hubble.${cluster}.raffa`
+
+make sure you have this in your hosts file
+
+```txt
+10.89.0.226 hubble.cluster1.raffa
+10.89.0.234 hubble.cluster2.raffa
+10.89.0.242 hubble.cluster3.raffa
+```
+
 ## create h2 namespace
 
 ```sh
@@ -209,7 +219,7 @@ connect to the yugabyte console by typing:
 http://yugbyte.{cluster}.raffa
 ```
 
-make sure you have this in your host file
+make sure you have this in your hosts file
 
 ```txt
 10.89.0.226 yugabyte.cluster1.raffa
@@ -251,7 +261,7 @@ for cluster in cluster1 cluster2 cluster3; do
 done
 ```
 
-## deploy dashboard (optional)
+<!-- ## deploy dashboard (optional)
 
 ```sh
 for cluster in cluster1 cluster2 cluster3; do
@@ -289,7 +299,7 @@ access grafana
 
 ```sh
 kubectl --context kind-${cluster} -n cilium-monitoring port-forward service/grafana --address 0.0.0.0 --address :: 3000:3000
-```
+``` -->
 
 ### uninstall cilium 
 ```sh
