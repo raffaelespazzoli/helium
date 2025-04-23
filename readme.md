@@ -99,7 +99,7 @@ export cidr_cluster1="10.89.0.224/29"
 export cidr_cluster2="10.89.0.232/29"
 export cidr_cluster3="10.89.0.240/29"
 for cluster in cluster1 cluster2 cluster3; do
-  cluster=${cluster} ordinal=${cluster: -1} apiserver_ip=${cluster_ips[${cluster}]}  envsubst < ./cilium/values2.yaml > /tmp/${cluster}-values.yaml
+  cluster=${cluster} ordinal=${cluster: -1} apiserver_ip=${cluster_ips[${cluster}]}  envsubst < ./cilium/values.yaml > /tmp/${cluster}-values.yaml
   helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.17.2" --namespace kube-system -f /tmp/${cluster}-values.yaml
   vcidr=cidr_${cluster}
   cidr=${!vcidr} envsubst < ./cilium/ippool.yaml | kubectl --context kind-${cluster} apply -f -
@@ -149,8 +149,8 @@ wait for cert-manager pods to be up
 
 ```sh
 kubectl --context kind-cluster1 wait pod --all -n cert-manager --for=condition=Ready --timeout=600s & 
-kubectl --context kind-cluster2 wait pod --all -n cert-manager  --for=condition=Ready --timeout=600s & 
-kubectl --context kind-cluster3 wait pod --all -n cert-manager  --for=condition=Ready --timeout=600s &
+kubectl --context kind-cluster2 wait pod --all -n cert-manager --for=condition=Ready --timeout=600s & 
+kubectl --context kind-cluster3 wait pod --all -n cert-manager --for=condition=Ready --timeout=600s &
 wait
 ```
 
@@ -187,32 +187,6 @@ access hubble ui
 cilium --context kind-${cluster} hubble ui
 ```
 
-## deploy dashboard (optional)
-
-```sh
-for cluster in cluster1 cluster2 cluster3; do
-  cluster=${cluster}  envsubst < ./dashboard/values.yaml > /tmp/values.yaml
-  helm --kube-context kind-${cluster} upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard -f /tmp/values.yaml
-  cluster=${cluster}  envsubst < ./dashboard/httproute.yaml | kubectl --context kind-${cluster} apply -f - -n kubernetes-dashboard
-done
-```
-
-get bearer tokens:
-
-```sh
-for cluster in cluster1 cluster2 cluster3; do
-  kubectl --context kind-${cluster} -n kubernetes-dashboard create token admin-user
-done
-```
-
-Make sure you have this in your hosts file:
-
-```txt
-10.89.0.226 console.cluster1.raffa
-10.89.0.234 console.cluster2.raffa
-10.89.0.242 console.cluster3.raffa
-```
-
 ## create h2 namespace
 
 ```sh
@@ -230,6 +204,7 @@ done
 ```
 
 connect to the yugabyte console by typing:
+
 ```
 http://yugbyte.{cluster}.raffa
 ```
@@ -276,81 +251,30 @@ for cluster in cluster1 cluster2 cluster3; do
 done
 ```
 
-<!-- ## Deploy h2 shared etcd and kcp
-
-api-server
-```sh
-for cluster in cluster1 cluster2 cluster3; do
-  cluster=${cluster} envsubst < ./shared-etcd/etcd-deployment.yaml | kubectl --context kind-${cluster} apply -f - -n h2
-  kubectl --context kind-${cluster} apply -f ./shared-etcd/api-server-deployment.yaml -n h2 
-done 
-```
-
-kcp
-
-```sh
-declare -A kcp_ips
-kcp_ips["cluster1"]="10.89.0.227"
-kcp_ips["cluster2"]="10.89.0.235"
-kcp_ips["cluster3"]="10.89.0.243"
-for cluster in cluster1 cluster2 cluster3; do
-  cluster=${cluster} envsubst < ./shared-etcd/etcd-deployment.yaml | kubectl --context kind-${cluster} apply -f - -n h2
-  kcp_ip=${kcp_ips[${cluster}]} cluster=${cluster}  envsubst < ./kcp/values.yaml > /tmp/values.yaml
-  helm --kube-context kind-${cluster} upgrade -i kcp ./kcp/charts/kcp -n h2 -f /tmp/values.yaml
-done 
-```
-
-# prepare kcp kubeconfig
-
-```sh
-kubectl --context kind-cluster1 apply -f ./kcp/client-credentials.yaml -n h2
-export client_ca=$(kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.ca\.crt}')
-export client_key=$(kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.tls\.key}')
-export client_crt=$(kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.tls\.crt}')
-kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
-kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.tls\.key}' | base64 -d > /tmp/tls.key
-kubectl --context kind-cluster1 get secret cluster-admin-client-cert -n h2 -o yaml -o=jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/tls.crt
-kubectl --kubeconfig=/tmp/kcp.kubeconfig config set-cluster cluster1 --server https://kcp.cluster1.raffa:6443/clusters/root --certificate-authority=/tmp/ca.crt --embed-certs=true
-kubectl --kubeconfig=/tmp/kcp.kubeconfig config set-credentials kcp-admin --client-certificate=/tmp/tls.crt --client-key=/tmp/tls.key --embed-certs=true
-kubectl --kubeconfig=/tmp/kcp.kubeconfig config set-context cluster1 --cluster=cluster1 --user=kcp-admin
-kubectl --kubeconfig=/tmp/kcp.kubeconfig config use-context cluster1
-```
-
-add the shared state crd
-
-```sh
-kubectl --kubeconfig /tmp/kcp.kubeconfig apply -f ./kcp/sample-crd.yaml
-#or
-kubectl apply -s https://kcp.cluster1.raffa:6443/clusters/root --insecure-skip-tls-verify --token admin-token -f ./kcp/sample-crd.yaml
-```
-
-add the api-service
+## deploy dashboard (optional)
 
 ```sh
 for cluster in cluster1 cluster2 cluster3; do
-  kubectl --context kind-${cluster} apply -f ./kcp/apiservice.yaml
-done
-```
-restart statefulsets
-```sh
-for cluster in cluster1 cluster2 cluster3; do
-  kubectl --context kind-${cluster} delete pod etcd-0 -n h2
+  cluster=${cluster}  envsubst < ./dashboard/values.yaml > /tmp/values.yaml
+  helm --kube-context kind-${cluster} upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard -f /tmp/values.yaml
+  cluster=${cluster}  envsubst < ./dashboard/httproute.yaml | kubectl --context kind-${cluster} apply -f - -n kubernetes-dashboard
 done
 ```
 
-
-
-## Deploy Ingress gateway contour
+get bearer tokens:
 
 ```sh
-declare -A ingress_ips
-ingress_ips["cluster1"]="10.89.0.226"
-ingress_ips["cluster2"]="10.89.0.234"
-ingress_ips["cluster3"]="10.89.0.242"
 for cluster in cluster1 cluster2 cluster3; do
-  ingress_ip=${ingress_ips[${cluster}]}  envsubst < ./contour/values.yaml > /tmp/values.yaml
-  helm --kube-context kind-${cluster} upgrade -i contour bitnami/contour --namespace projectcontour --create-namespace -f /tmp/values.yaml
+  kubectl --context kind-${cluster} -n kubernetes-dashboard create token admin-user
 done
+```
+
+Make sure you have this in your hosts file:
+
+```txt
+10.89.0.226 console.cluster1.raffa
+10.89.0.234 console.cluster2.raffa
+10.89.0.242 console.cluster3.raffa
 ```
 
 ## Install prometheus and grafana (optional)
@@ -365,12 +289,7 @@ access grafana
 
 ```sh
 kubectl --context kind-${cluster} -n cilium-monitoring port-forward service/grafana --address 0.0.0.0 --address :: 3000:3000
-``` -->
-
-
-
-
-then you should be able to connect to the consoles  with these urls: console.<cluster>.raffa
+```
 
 ### uninstall cilium 
 ```sh

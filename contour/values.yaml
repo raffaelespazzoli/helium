@@ -1,4 +1,0 @@
-envoy:
-  service:
-    type: LoadBalancer
-    loadBalancerIP: ${ingress_ip}    
