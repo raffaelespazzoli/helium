@@ -98,10 +98,6 @@ cluster_ips["cluster3"]="10.89.0.240"
 export cidr_cluster1="10.89.0.224/29"
 export cidr_cluster2="10.89.0.232/29"
 export cidr_cluster3="10.89.0.240/29"
-declare -A ingress_ips
-ingress_ips["cluster1"]="10.89.0.226"
-ingress_ips["cluster2"]="10.89.0.234"
-ingress_ips["cluster3"]="10.89.0.242"
 for cluster in cluster1 cluster2 cluster3; do
   cluster=${cluster} ordinal=${cluster: -1} apiserver_ip=${cluster_ips[${cluster}]}  envsubst < ./cilium/values2.yaml > /tmp/${cluster}-values.yaml
   helm --kube-context kind-${cluster} upgrade -i cilium cilium/cilium --version "1.17.2" --namespace kube-system -f /tmp/${cluster}-values.yaml
@@ -112,7 +108,26 @@ for cluster in cluster1 cluster2 cluster3; do
 done
 ```   
 
+wait for cilium-operator to come up
 
+```sh
+kubectl --context kind-cluster1 wait pod -l app.kubernetes.io/name=cilium-operator -n kube-system --for=condition=Ready --timeout=600s & 
+kubectl --context kind-cluster2 wait pod -l app.kubernetes.io/name=cilium-operator -n kube-system --for=condition=Ready --timeout=600s & 
+kubectl --context kind-cluster3 wait pod -l app.kubernetes.io/name=cilium-operator -n kube-system --for=condition=Ready --timeout=600s &
+wait
+```
+
+complete cilium configuration
+
+```sh
+declare -A ingress_ips
+ingress_ips["cluster1"]="10.89.0.226"
+ingress_ips["cluster2"]="10.89.0.234"
+ingress_ips["cluster3"]="10.89.0.242"
+for cluster in cluster1 cluster2 cluster3; do
+  ingress_ip=${ingress_ips[${cluster}]}  cluster=${cluster} envsubst < ./cilium/gateway.yaml | kubectl --context kind-${cluster} apply -f - -n kube-system
+done
+```
 
 ## deploy cert-manager 
 
@@ -125,7 +140,7 @@ done
 this sort of hack is to share the CA across clusters
 
 ```sh
-kubectl --context kind-cluster1 apply -f ./cert-manager/issuer-cluster1.yaml -n cert-manager
+kubectl --context kind-cluster1 apply -f ./cert-manager/self-signed-issuer.yaml -n cert-manager
 sleep 1
 kubectl --context kind-cluster1 get secret root-secret -n cert-manager -o yaml > /tmp/root-secret.yaml
 ```
@@ -140,9 +155,9 @@ wait
 ```
 
 ```sh
-for cluster in cluster2 cluster3; do
+for cluster in cluster1 cluster2 cluster3; do
   kubectl --context kind-${cluster} apply -f /tmp/root-secret.yaml
-  kubectl --context kind-${cluster} apply -f ./cert-manager/issuer-others.yaml -n cert-manager
+  kubectl --context kind-${cluster} apply -f ./cert-manager/cluster-issuer.yaml -n cert-manager
 done
 ```
 

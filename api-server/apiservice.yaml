@@ -7,7 +7,7 @@ metadata:
     api: basic-example
     apiserver: "true"
   annotations:
-    cert-manager.io/inject-ca-from: cert-manager/root-secret  
+    cert-manager.io/inject-ca-from-secret: cert-manager/root-secret
 spec:
   version: v1
   group: innsmouth.k8s.io
@@ -25,7 +25,7 @@ metadata:
     api: basic-example
     apiserver: "true"
   annotations:
-    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+    cert-manager.io/inject-ca-from-secret: cert-manager/root-secret
 spec:
   version: v1
   group: kingsport.k8s.io
@@ -43,7 +43,7 @@ metadata:
     api: basic-example
     apiserver: "true"
   annotations:
-    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+    cert-manager.io/inject-ca-from-secret: cert-manager/root-secret
 spec:
   version: v1beta1
   group: miskatonic.k8s.io
@@ -61,7 +61,7 @@ metadata:
     api: basic-example
     apiserver: "true"
   annotations:
-    cert-manager.io/inject-ca-from: cert-manager/root-secret    
+    cert-manager.io/inject-ca-from-secret: cert-manager/root-secret
 spec:
   version: v1beta1
   group: olympus.k8s.io
