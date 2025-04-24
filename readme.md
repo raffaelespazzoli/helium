@@ -1,8 +1,11 @@
 # Helium 
 
+you need to be root to run this setup because cilium on kind does not work with rootless containers.
+
 To quickly start, run
 
 ```sh
+sudo su
 ./setup.sh
 ```
 
@@ -11,10 +14,12 @@ If you need to setup step by step, follow the steps below.
 ## setup helm
 
 ```sh
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+sudo su
+```
+
+```sh
 helm repo add cilium https://helm.cilium.io/
 helm repo add yugabytedb https://charts.yugabyte.com
-helm repo add bitnami https://charts.bitnami.com/bitnami
 ```
 
 ## deploy kind clusters
