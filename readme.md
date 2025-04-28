@@ -12,6 +12,9 @@ For a more in detail explanation see [why](./why.md)
 
 ![kine-yugabyte.](./media/kine-yugabyte.drawio.png)
 
+In this architecture we can see a shared control plane stretched between three clusters. These clysters are in different failure domains making the shared control plane resilient to disasters. The storage of the shared control plane is implement with Yugabyte abd kine. Yugabyte providers and indefinitely scalable fully consistent distributed SQL storage. Kine is a simple shim that exposes SQL storage with an etcd interface.
+The shared control plane is accessible by the operators and controller via one or more APIServices. APIServices instruct an api-server to forward a request for certain api/groups. This allows to write controller with the common library knowing that for some api/groups, the storage is actually shared between clusters.
+
 ## Demo
 
 ![Alt Text](./media/demo.gif)
