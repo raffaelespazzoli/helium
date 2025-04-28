@@ -9,6 +9,10 @@ sudo su
 ./setup.sh
 ```
 
+## Architecture
+
+![kine-yugabyte.](./media/kine-yugabyte.drawio.png)
+
 ## Demo
 
 ![Alt Text](./media/demo.gif)
