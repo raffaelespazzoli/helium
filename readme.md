@@ -6,7 +6,7 @@ This is a different approach to multi-cluster that has the objective of solving 
 2. using etcd to share state between cluster is inherently not scalable (you can get maybe to 100 clusters).
 3. writing multi-cluster operators is hard because current frameworks and libraries to write operator are not designed to let controller observe multiple control planes 
 
-you need to be root to run this setup because cilium on kind does not work with rootless containers.
+For a more in detail explanation see [why](./why.md)
 
 ## Architecture
 
@@ -26,6 +26,7 @@ sudo su
 ```
 
 If you need to setup step by step, follow the steps below.
+You need to be root to run this setup because cilium on kind does not work with rootless containers.
 
 ## setup helm
 
