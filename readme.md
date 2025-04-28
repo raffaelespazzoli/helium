@@ -1,13 +1,12 @@
 # Helium 
 
+This is a different approach to multi-cluster that has the objective of solving the following issue:
+
+1. hub and spoke topologies have an inherent point of failure
+2. using etcd to share state between cluster is inherently not scalable (you can get maybe to 100 clusters).
+3. writing multi-cluster operators is hard because current frameworks and libraries to write operator are not designed to let controller observe multiple control planes 
+
 you need to be root to run this setup because cilium on kind does not work with rootless containers.
-
-To quickly start, run
-
-```sh
-sudo su
-./setup.sh
-```
 
 ## Architecture
 
@@ -17,7 +16,14 @@ sudo su
 
 ![Alt Text](./media/demo.gif)
 
+## getting started quickly
 
+To quickly start, run
+
+```sh
+sudo su
+./setup.sh
+```
 
 If you need to setup step by step, follow the steps below.
 
