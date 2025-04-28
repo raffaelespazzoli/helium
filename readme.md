@@ -9,6 +9,10 @@ sudo su
 ./setup.sh
 ```
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/CJ9Kt7FXO7La9znuTKKXAw9y1.svg)](https://asciinema.org/a/CJ9Kt7FXO7La9znuTKKXAw9y1)
+
 If you need to setup step by step, follow the steps below.
 
 ## setup helm

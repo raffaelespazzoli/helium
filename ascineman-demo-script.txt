@@ -1,0 +1,5 @@
+# we are watching the Festival CRD in each of the three clusters
+# right now there is only one instance of the Festival type
+# we are going to create a new one
+
+kubectl --context kind-cluster1 apply -f api-server/sample/festival2.yaml -n h2
